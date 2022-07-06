@@ -47,7 +47,7 @@ def segmenter(model, text_direction, mask, device, yolo_model, input, output) ->
             im, text_direction, mask=mask, model=model, device=device,
             regions=regions
         )
-    except Exception:
+    except Exception as E:
         if ctx.meta['raise_failed']:
             raise
         message('\u2717', fg='red')
@@ -191,7 +191,6 @@ def process_pipeline(subcommands, input, batch_input, suffix, verbose, format_ty
             for idx, (task, input, output) in enumerate(zip(subcommands, fc, fc[1:])):
                 if len(fc) - 2 == idx:
                     ctx.meta['last_process'] = True
-                print(task)
                 task(input=input, output=output)
         except Exception as e:
             logger.error(f'Failed processing {io_pair[0]}: {str(e)}')

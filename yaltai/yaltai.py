@@ -46,6 +46,7 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
 
     val_idx: Optional[int] = None
     if shuffle:
+        input = list(input)
         random.shuffle(input)
         val_idx = int(len(input) * shuffle)
         message(f"{val_idx+1}/{len(input)} image for validation.", fg='green')
@@ -66,7 +67,7 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
 
     for idx, file in tqdm(enumerate(input)):
         parsed = parse_xml(file)
-        image_path = os.path.join(os.path.dirname(file), parsed["image"])
+        image_path = parsed["image"]
         regions = parsed["regions"]
         for region in regions:
             if map_zones(region) not in Zones:
@@ -118,15 +119,15 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
 
     with open(f"{output}/config.yml", "w") as f:
         data = {
-            "train": output,
-            "val": output,
+            "train": os.path.abspath(output),
+            "val": os.path.abspath(output),
             "nc": len(Zones),
             "names": Zones
         }
         if shuffle:
             data.update({
-                "train": f"{output}/train/images",
-                "val": f"{output}/val/images"
+                "train": f"{os.path.abspath(output)}/train/images",
+                "val": f"{os.path.abspath(output)}/val/images"
             })
 
         yaml.dump(
@@ -140,6 +141,10 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
 
     message(f"Configuration available at {output}/config.yml.", fg='green')
     message(f"Label Map available at {output}/labelmap.txt.", fg='green')
+
+    message(f"Regions count:", fg='blue')
+    for zone, cnt in ZoneCounter.items():
+        message(f"\t- {cnt:05} {zone}", fg='blue')
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Tuple, Optional
 import numpy as np
 
+
 @dataclass
 class YoloZone:
     BOX: List[Tuple[int, int]]

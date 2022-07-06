@@ -5,6 +5,8 @@
 test_*.jpg
 test_*.xml
 converted
+my-dataset
+runs
 # PyCharm
 .idea
 # Byte-compiled / optimized / DLL files

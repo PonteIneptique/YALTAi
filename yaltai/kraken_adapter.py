@@ -87,6 +87,7 @@ def segment(im: PIL.Image.Image,
                    True: 'top',
                    False: 'bottom'}[net.user_metadata['topline']]
             logger.debug(f'Baseline location: {loc}')
+
         rets = compute_segmentation_map(im, mask, net, device)
 
         # We can't clear the heatmap of regions because it would mess up

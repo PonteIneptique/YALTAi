@@ -23,7 +23,7 @@ def segment(model: str, device: str, input: str) -> Dict[str, List[List[int]]]:
         img_width, img_height = im.shape[:2]
 
         if not pred.shape[0]:
-            raise Exception("Should be a none return")
+            return {}
 
         for x0, y0, x1, y1, conf, cls in reversed(pred):
             cls_name = names[int(cls)]
