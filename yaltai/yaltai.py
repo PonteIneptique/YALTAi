@@ -27,7 +27,7 @@ def cli():
     """ `yaltai` commands provides conversion options """
 
 
-@cli.command("convert")
+@cli.command("alto-to-yolo")
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, file_okay=True), nargs=-1)
 @click.argument("output", type=click.Path(dir_okay=True, file_okay=False))
 @click.option("--segmonto", type=click.Choice(["region", "subtype", "full"]), default=None,
