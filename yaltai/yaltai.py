@@ -6,6 +6,7 @@ import shutil
 import os
 import random
 import re
+import sys
 from typing import List, Optional
 from collections import Counter
 
@@ -18,7 +19,7 @@ from kraken.kraken import message
 from kraken.lib.xml import parse_xml
 import tabulate
 
-from yaltai.converter import AltoToYoloZone, parse_box_labels, read_labelmap
+from yaltai.converter import AltoToYoloZone, parse_box_labels, read_labelmap, YoloV5Zone
 from mean_average_precision import MetricBuilder
 
 
@@ -34,8 +35,12 @@ def cli():
               help="If you use Segmonto, helper to cut the class and merge them at different levels")
 @click.option("--shuffle", type=float, default=None,
               help="Split into train and val")
-def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str], shuffle: Optional[float]):
-
+@click.option("-l", "--labelmap", type=click.Path(exists=True, file_okay=True, dir_okay=False),
+              help="Format for the score table", default=None, show_default=True)
+def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str], shuffle: Optional[float],
+            labelmap: Optional[str]):
+    """ Converts ALTO-XML files to YOLOv5 training files
+    """
     if shuffle:
         message(f"Shuffling data with a ratio of {shuffle} for validation.", fg='green')
         os.makedirs(f"{output}/train/labels", exist_ok=True)
@@ -64,6 +69,8 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
         return zone_type
 
     Zones: List[str] = []
+    if labelmap:
+        Zones = read_labelmap(labelmap)
 
     ZoneCounter = Counter()
 
@@ -199,6 +206,75 @@ def get_scores(gt_directory, pred_directory, threshold, format, labelmap):
         table.append([labelmap[cls_orig_idx], ap, precision, recall, support])
 
     print(tabulate.tabulate(table, tablefmt=format, floatfmt=".3f", headers="firstrow"))
+
+
+@cli.command("yolo-to-alto")
+@click.argument("input", type=click.Path(exists=True, dir_okay=False, file_okay=True), nargs=-1)
+@click.option("-l", "--labelmap", type=click.Path(exists=True, file_okay=True, dir_okay=False),
+              help="Format for the score table", default=None, show_default=True)
+def yolo_to_alto(input, labelmap):
+    """ Converts YOLOv5.txt files to ALTO files """
+    if not labelmap:
+        message("No labelmap given, --labelmap is required for ALTO conversion", fg="red")
+        sys.exit(0)
+
+    labelmap = read_labelmap(labelmap)
+
+    OtherTags = "\n".join([
+        f'<OtherTag ID="BT{idx:03}" LABEL="{zone}" DESCRIPTION="block type {zone}"/>'
+        for idx, zone in enumerate(labelmap)
+    ])
+
+    with open(os.path.join(os.path.dirname(__file__), "template.xml")) as f:
+        TEMPLATE = f.read()
+
+    for file in input:
+        xml_name = file[:-4] + ".xml"
+        img_file_name = os.path.basename(file[:-4]) + ".jpg"
+        zones = []
+        if os.path.exists(os.path.join(os.path.dirname(file), "..", "images", img_file_name)):
+            img_name = os.path.join(os.path.dirname(file), "..", "images", img_file_name)
+            img_for_xml_name = f"../images/{img_file_name}"
+        elif os.path.exists(os.path.join(os.path.dirname(file), "..", "images", img_file_name)):
+            img_name = os.path.join(os.path.dirname(file), "..", "images", img_file_name)
+            img_for_xml_name = os.path.join("..", img_file_name)
+        else:
+            message(f"Can't find the image for {img_file_name}")
+            sys.exit(0)
+
+        image = Image.open(img_name)
+        img_width, img_height = image.size
+        image.close()
+
+        with open(file) as f:
+            for line_idx, line in enumerate(f):
+                z = YoloV5Zone.from_txt(*line.strip().split()[:5])
+
+                x0, y0, x1, y1 = z.xyxy
+                x0, x1 = img_width*x0, img_width*x1
+                y0, y1 = img_height*y0, img_height*y1
+                x0, x1, y0, y1 = [int(z) for z in [x0, x1, y0, y1]]
+                width = x1 - x0
+                height = y1 - y0
+
+                zones.append(f"""
+            <TextBlock HPOS="{x0}" VPOS="{y0}"
+                       WIDTH="{int(width)}" HEIGHT="{int(height)}"
+                       ID="eSc_textblock_blck{line_idx:03}"
+                       TAGREFS="BT{z.tag:03}">
+                <Shape>
+                    <Polygon POINTS="{x0} {y0} {x1} {y0} {x1} {y1} {x0} {y1} {x0} {y0}"/>
+                </Shape>
+            </TextBlock>""")
+
+        with open(xml_name, "w") as f:
+            f.write(
+                TEMPLATE.replace("%Filename%", img_for_xml_name)
+                .replace("%Width%", str(img_width))
+                .replace("%Height%", str(img_height))
+                .replace("%Tags%", OtherTags)
+                .replace("%Textblocks%", "".join(zones))
+            )
 
 
 if __name__ == "__main__":
