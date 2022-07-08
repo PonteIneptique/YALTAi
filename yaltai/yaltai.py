@@ -16,9 +16,9 @@ import click
 import yaml
 from kraken.kraken import message
 from kraken.lib.xml import parse_xml
+import tabulate
 
-from yaltai.converter import AltoToYoloZone, YoloV5Zone, parse_box_labels
-from yaltai.map_calc import calculate_map
+from yaltai.converter import AltoToYoloZone, parse_box_labels, read_labelmap
 from mean_average_precision import MetricBuilder
 
 
@@ -153,7 +153,11 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
 @click.argument("gt-directory", type=click.Path(exists=True, dir_okay=True, file_okay=False))
 @click.argument("pred-directory", type=click.Path(dir_okay=True, file_okay=False, exists=True))
 @click.option("-t", "--threshold", type=float, help="IoU Threshold", default=.5, show_default=True)
-def get_scores(gt_directory, pred_directory, threshold):
+@click.option("-f", "--format", type=click.Choice(["markdown", "latex"]),
+              help="Format for the score table", default="markdown", show_default=True)
+@click.option("-l", "--labelmap", type=click.Path(exists=True, file_okay=True, dir_okay=False),
+              help="Format for the score table", default=None, show_default=True)
+def get_scores(gt_directory, pred_directory, threshold, format, labelmap):
     gt_directory = os.path.join(gt_directory, "*.txt")
     pred_directory = os.path.join(pred_directory, "*.txt")
 
@@ -170,8 +174,6 @@ def get_scores(gt_directory, pred_directory, threshold):
     def reclass_classes(array_list: List[np.array]) -> None:
         for array in array_list:
             for row_idx in range(array.shape[0]):
-                if array[row_idx, 4].astype(int) > 9:
-                    print(array[row_idx, 4].astype(int), array[row_idx], classes)
                 array[row_idx, 4] = classes.index(array[row_idx, 4].astype(int))
 
     reclass_classes(gt_arrays)
@@ -181,13 +183,22 @@ def get_scores(gt_directory, pred_directory, threshold):
     for pred_array, gt_array in zip(pred_arrays, gt_arrays):
         builder.add(pred_array, gt_array)
 
-    metric = builder.value(iou_thresholds=0.5)
-    print(f"VOC PASCAL mAP: {metric['mAP']}")
+    metric = builder.value(iou_thresholds=threshold)
+    print(f"Global mAP: {metric['mAP']}")
+
+    if labelmap:
+        labelmap = read_labelmap(labelmap)
+    else:
+        labelmap = list(range(max(classes) + 1))
+
+    table = [["Class", "AP", "Precision", "Recall", "Support"]]
     for cls_idx, cls_orig_idx in enumerate(classes):
         data = metric[0.5][cls_idx]
         ap, precision, recall, support = data["ap"], data["precision"].mean(), data["recall"].mean(), \
                                          data["recall"].shape[0]
-        print(f"AP={ap}, PRE={precision}, REC={recall}, SUP={support}")
+        table.append([labelmap[cls_orig_idx], ap, precision, recall, support])
+
+    print(tabulate.tabulate(table, tablefmt=format, floatfmt=".3f", headers="firstrow"))
 
 
 if __name__ == "__main__":

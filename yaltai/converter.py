@@ -102,3 +102,10 @@ def parse_box_labels(
             )
 
     return parsed, arrays
+
+
+def read_labelmap(path: str) -> List[str]:
+    lines = []
+    with open(path) as f:
+        lines = f.read().split()
+    return lines
