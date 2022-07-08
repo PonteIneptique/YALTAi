@@ -1,8 +1,7 @@
 """ This CLI provides tool to transform ALTO or PAGE to YOLOv5 Formats
 
 """
-
-
+import glob
 import shutil
 import os
 import random
@@ -10,14 +9,17 @@ import re
 from typing import List, Optional
 from collections import Counter
 
+import numpy as np
 from tqdm import tqdm
 from PIL import Image
 import click
 import yaml
 from kraken.kraken import message
-
-from yaltai.converter import YoloZone
 from kraken.lib.xml import parse_xml
+
+from yaltai.converter import AltoToYoloZone, YoloV5Zone, parse_box_labels
+from yaltai.map_calc import calculate_map
+from mean_average_precision import MetricBuilder
 
 
 @click.group()
@@ -78,12 +80,12 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
         width, height = image.width, image.height
         image.close()
 
-        local_file: List[YoloZone] = []
+        local_file: List[AltoToYoloZone] = []
         for region, examples in regions.items():
             region_id = Zones.index(map_zones(region))
             for box in examples:
                 local_file.append(
-                    YoloZone(
+                    AltoToYoloZone(
                         BOX=box,
                         PAGE_WIDTH=width,
                         PAGE_HEIGHT=height,
@@ -145,6 +147,47 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
     message(f"Regions count:", fg='blue')
     for zone, cnt in ZoneCounter.items():
         message(f"\t- {cnt:05} {zone}", fg='blue')
+
+
+@cli.command("scores")
+@click.argument("gt-directory", type=click.Path(exists=True, dir_okay=True, file_okay=False))
+@click.argument("pred-directory", type=click.Path(dir_okay=True, file_okay=False, exists=True))
+@click.option("-t", "--threshold", type=float, help="IoU Threshold", default=.5, show_default=True)
+def get_scores(gt_directory, pred_directory, threshold):
+    gt_directory = os.path.join(gt_directory, "*.txt")
+    pred_directory = os.path.join(pred_directory, "*.txt")
+
+    ground_truth, gt_arrays = parse_box_labels(sorted(glob.glob(gt_directory)))
+    pred, pred_arrays = parse_box_labels(sorted(glob.glob(pred_directory)), gt=False)
+
+    classes = np.unique(
+        np.concatenate((
+            np.array([row for arr in gt_arrays for row in arr])[:, 4],
+            np.array([row for arr in pred_arrays for row in arr])[:, 4]
+        ))
+    ).tolist()
+
+    def reclass_classes(array_list: List[np.array]) -> None:
+        for array in array_list:
+            for row_idx in range(array.shape[0]):
+                if array[row_idx, 4].astype(int) > 9:
+                    print(array[row_idx, 4].astype(int), array[row_idx], classes)
+                array[row_idx, 4] = classes.index(array[row_idx, 4].astype(int))
+
+    reclass_classes(gt_arrays)
+    reclass_classes(pred_arrays)
+
+    builder = MetricBuilder.build_evaluation_metric("map_2d", async_mode=False, num_classes=len(classes))
+    for pred_array, gt_array in zip(pred_arrays, gt_arrays):
+        builder.add(pred_array, gt_array)
+
+    metric = builder.value(iou_thresholds=0.5)
+    print(f"VOC PASCAL mAP: {metric['mAP']}")
+    for cls_idx, cls_orig_idx in enumerate(classes):
+        data = metric[0.5][cls_idx]
+        ap, precision, recall, support = data["ap"], data["precision"].mean(), data["recall"].mean(), \
+                                         data["recall"].shape[0]
+        print(f"AP={ap}, PRE={precision}, REC={recall}, SUP={support}")
 
 
 if __name__ == "__main__":
