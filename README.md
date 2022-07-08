@@ -45,3 +45,13 @@ YALTAi has the same CLI interface as Kraken, so:
 # And then annotate your new data with the same CLI API as Kraken !
 python -m yaltai.kraken_yaltai --device cuda:0 -I "*.jpg" --suffix ".xml" segment --yolo runs/train/exp5/weights/best.pt
 ```
+
+## Metrics
+
+The metrics produced from various libraries never gives the same mAP or Precision. I tried
+
+- `object-detection-metrics==0.4`
+- `mapCalc`
+- `mean-average-precision` which ended up being the chosen one (cleanest in terms of how I can access info) 
+
+and of course I compared with YOLOv5 raw results. Nothing worked the same. And the library YOLOv5 derives its metrics from is uninstallable through pip.
