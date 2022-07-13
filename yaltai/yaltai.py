@@ -2,6 +2,7 @@
 
 """
 import glob
+import json
 import shutil
 import os
 import random
@@ -37,19 +38,23 @@ def cli():
               help="Split into train and val")
 @click.option("-l", "--labelmap", type=click.Path(exists=True, file_okay=True, dir_okay=False),
               help="Format for the score table", default=None, show_default=True)
+@click.option("--image/--no-image", type=bool, default=True, show_default=True,
+              help="Copy images when converting ALTO to YOLOv5")
 def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str], shuffle: Optional[float],
-            labelmap: Optional[str]):
+            labelmap: Optional[str], image: bool):
     """ Converts ALTO-XML files to YOLOv5 training files
     """
     if shuffle:
         message(f"Shuffling data with a ratio of {shuffle} for validation.", fg='green')
         os.makedirs(f"{output}/train/labels", exist_ok=True)
-        os.makedirs(f"{output}/train/images", exist_ok=True)
         os.makedirs(f"{output}/val/labels", exist_ok=True)
-        os.makedirs(f"{output}/val/images", exist_ok=True)
+        if image:
+            os.makedirs(f"{output}/train/images", exist_ok=True)
+            os.makedirs(f"{output}/val/images", exist_ok=True)
     else:
         os.makedirs(f"{output}/labels", exist_ok=True)
-        os.makedirs(f"{output}/images", exist_ok=True)
+        if image:
+            os.makedirs(f"{output}/images", exist_ok=True)
 
     val_idx: Optional[int] = None
     if shuffle:
@@ -80,12 +85,12 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
         regions = parsed["regions"]
         for region in regions:
             if map_zones(region) not in Zones:
-                Zones.append(region)
+                Zones.append(map_zones(region))
 
         # Retrieve image
-        image = Image.open(image_path)
-        width, height = image.width, image.height
-        image.close()
+        image_file = Image.open(image_path)
+        width, height = image_file.width, image_file.height
+        image_file.close()
 
         local_file: List[AltoToYoloZone] = []
         for region, examples in regions.items():
@@ -111,15 +116,16 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
         ext = src_img.split(".")[-1]
         simplified_name = '.'.join(os.path.basename(image_path).split('.')[:-1])
 
-        if ext.lower() not in {"jpg", "jpeg"}:
-            # open image in png format
-            img_png = Image.open(src_img)
+        if image:
+            if ext.lower() not in {"jpg", "jpeg"}:
+                # open image in png format
+                img_png = Image.open(src_img)
 
-            # The image object is used to save the image in jpg format
-            img_png.save(f"{path}/images/{simplified_name}.jpg")
-            img_png.close()
-        else:
-            shutil.copy(src_img, f"{path}/images/{simplified_name}.jpg")
+                # The image object is used to save the image in jpg format
+                img_png.save(f"{path}/images/{simplified_name}.jpg")
+                img_png.close()
+            else:
+                shutil.copy(src_img, f"{path}/images/{simplified_name}.jpg")
 
         with open(f"{path}/labels/{simplified_name}.txt", "w") as f:
             f.write("\n".join([loc.yoloV5() for loc in local_file]))
@@ -163,8 +169,10 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
 @click.option("-f", "--format", type=click.Choice(["markdown", "latex"]),
               help="Format for the score table", default="markdown", show_default=True)
 @click.option("-l", "--labelmap", type=click.Path(exists=True, file_okay=True, dir_okay=False),
-              help="Format for the score table", default=None, show_default=True)
-def get_scores(gt_directory, pred_directory, threshold, format, labelmap):
+              help="Labelmap to print nicely the information", default=None, show_default=True)
+@click.option("-j", "--save-json", type=click.File(mode="w"),
+              help="JSON File to save information", default=None, show_default=True)
+def get_scores(gt_directory, pred_directory, threshold, format, labelmap, save_json):
     gt_directory = os.path.join(gt_directory, "*.txt")
     pred_directory = os.path.join(pred_directory, "*.txt")
 
@@ -202,10 +210,24 @@ def get_scores(gt_directory, pred_directory, threshold, format, labelmap):
     for cls_idx, cls_orig_idx in enumerate(classes):
         data = metric[0.5][cls_idx]
         ap, precision, recall, support = data["ap"], data["precision"].mean(), data["recall"].mean(), \
-                                         data["recall"].shape[0]
+                                         data["precision"].shape[0]
         table.append([labelmap[cls_orig_idx], ap, precision, recall, support])
 
     print(tabulate.tabulate(table, tablefmt=format, floatfmt=".3f", headers="firstrow"))
+
+    if save_json is not None:
+        json.dump({
+            "mAP": float(metric["mAP"]),
+            "classes": {
+                row[0]: {
+                    "AP": float(row[1]),
+                    "Precision": float(row[2]),
+                    "Recall": float(row[2]),
+                    "Support": float(row[3])
+                }
+                for row in table[1:]
+            }
+        }, save_json)
 
 
 @cli.command("yolo-to-alto")

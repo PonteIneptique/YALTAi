@@ -6,6 +6,8 @@ test_*.jpg
 test_*.xml
 converted
 my-dataset
+ex
+table-test
 runs
 # PyCharm
 .idea
