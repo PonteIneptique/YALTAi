@@ -19,7 +19,7 @@ DESCRIPTION = "You Actually Look Twice At it, YOLOv5-Kraken adapter for region d
 URL = 'https://github.com/ponteineptique/yaltai'
 AUTHOR = 'Thibault Clérice'
 REQUIRES_PYTHON = '>=3.8.0'
-VERSION = "0.0.1a3"
+VERSION = "0.0.1rc2"
 
 # What packages are required for this module to be executed?
 
