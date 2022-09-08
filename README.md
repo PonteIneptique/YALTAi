@@ -29,6 +29,7 @@ And then [train YOLO](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Da
 # Download YOLOv5
 git clone https://github.com/ultralytics/yolov5  # clone
 cd yolov5
+git checkout v6.2
 pip install -r requirements.txt  # install
 # Train your YOLOv5 data (YOLOv5 is installed with YALTAi)
 python train.py --data "../my-dataset/config.yml" --batch-size 4 --img 640 --weights yolov5x.pt --epochs 50
