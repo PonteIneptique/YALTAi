@@ -1,6 +1,5 @@
 from typing import List, Dict
-from yolov5 import YOLOv5
-from yolov5.models.common import Detections
+from torch import hub
 
 
 def segment(model: str, device: str, input: str) -> Dict[str, List[List[int]]]:
@@ -12,9 +11,9 @@ def segment(model: str, device: str, input: str) -> Dict[str, List[List[int]]]:
         ]
     }
     """
-    model = YOLOv5(model_path=model, device=device)
-    prediction: Detections = model.predict([input])
-    names: List[str] = prediction.names
+    model = hub.load("ultralytics/yolov5:v6.2", "custom", path=model, device=device)
+    prediction = model(input)
+    names: List[str] = list(prediction.names.values())
     out = {
         name: []
         for name in names
@@ -27,12 +26,6 @@ def segment(model: str, device: str, input: str) -> Dict[str, List[List[int]]]:
 
         for *box, conf, cls in reversed(pred):
             cls_name = names[int(cls)]
-            # Top Left
-            #xc = int(xc.item() * img_width)
-            #yc = int(yc.item() * img_height)
-            # Bottom Right
-            #w = int(w.item() * img_width)
-            #h = int(h.item() * img_height)
             box = [int(z.item()) for z in box]
             x0, y0, x1, y1 = box
 

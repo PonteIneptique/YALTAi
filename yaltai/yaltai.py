@@ -299,5 +299,10 @@ def yolo_to_alto(input, labelmap):
             )
 
 
+import yaltai.kraken_yaltai as kyaltai
+
+cli.add_command(kyaltai.cli, "kraken")
+
+
 if __name__ == "__main__":
     cli()

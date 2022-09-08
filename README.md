@@ -20,15 +20,18 @@ Convert (and split optionally) your data
 ```bash
 # Keeps .1 data in the validation set and convert all alto into alto
 #  Keeps the segmonto information up to the regions
-python -m yaltai.yaltai alto-to-yolo PATH/TO/ALTOorPAGE/*.xml my-dataset --shuffle .1 --segmonto region
+yaltai alto-to-yolo PATH/TO/ALTOorPAGE/*.xml my-dataset --shuffle .1 --segmonto region
 ```
 
-And then train YOLO ([note that I recommend using the repository and not the CLI](https://github.com/ultralytics/yolov5)) as the CLI
-provided with the library keeps for looking at the wrong place (it needs absolute path)
+And then [train YOLO](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) 
 
 ```bash
+# Download YOLOv5
+git clone https://github.com/ultralytics/yolov5  # clone
+cd yolov5
+pip install -r requirements.txt  # install
 # Train your YOLOv5 data (YOLOv5 is installed with YALTAi)
-yolov5 train --data "$PWD/my-dataset/config.yml" --batch-size 4 --img 640 --weights yolov5x.pt --epochs 50
+python train.py --data "../my-dataset/config.yml" --batch-size 4 --img 640 --weights yolov5x.pt --epochs 50
 ```
 
 ## Predicting
@@ -43,7 +46,7 @@ YALTAi has the same CLI interface as Kraken, so:
 # Retrieve the best.pt after the training
 # It should be in runs/train/exp[NUMBER]/weights/best.pt
 # And then annotate your new data with the same CLI API as Kraken !
-python -m yaltai.kraken_yaltai --device cuda:0 -I "*.jpg" --suffix ".xml" segment --yolo runs/train/exp5/weights/best.pt
+yaltai kraken --device cuda:0 -I "*.jpg" --suffix ".xml" segment --yolo runs/train/exp5/weights/best.pt
 ```
 
 ## Metrics
