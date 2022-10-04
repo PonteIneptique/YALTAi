@@ -121,6 +121,9 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
                 # open image in png format
                 img_png = Image.open(src_img)
 
+                if img_png.mode == "RGBA":  # Handle RGBA
+                    img_png = img_png.convert('RGB')
+
                 # The image object is used to save the image in jpg format
                 img_png.save(f"{path}/images/{simplified_name}.jpg")
                 img_png.close()
