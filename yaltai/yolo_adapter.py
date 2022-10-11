@@ -13,7 +13,11 @@ def segment(model: str, device: str, input: str) -> Dict[str, List[List[int]]]:
     """
     model = hub.load("ultralytics/yolov5:v6.2", "custom", path=model, device=device)
     prediction = model(input)
-    names: List[str] = list(prediction.names.values())
+    if isinstance(prediction.names, dict):
+        names: List[str] = list(prediction.names.values())
+    else:
+        names: List[str] = list(prediction.names)
+
     out = {
         name: []
         for name in names
