@@ -18,7 +18,7 @@ pip install YALTAi
 Convert (and split optionally) your data
 
 ```bash
-# Keeps .1 data in the validation set and convert all alto into alto
+# Keeps .1 data in the validation set and convert all alto into YOLOv5 format
 #  Keeps the segmonto information up to the regions
 yaltai alto-to-yolo PATH/TO/ALTOorPAGE/*.xml my-dataset --shuffle .1 --segmonto region
 ```
