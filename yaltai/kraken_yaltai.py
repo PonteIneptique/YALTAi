@@ -13,7 +13,7 @@ from PIL import Image
 from kraken.lib.progress import KrakenProgressBar
 
 
-def segmenter(model, text_direction, mask, device, yolo_model, input, output) -> None:
+def segmenter(model, text_direction, mask, device, yolo_model, ignore_lines, input, output) -> None:
     import json
     import yaltai.kraken_adapter
     import yaltai.yolo_adapter
@@ -45,7 +45,7 @@ def segmenter(model, text_direction, mask, device, yolo_model, input, output) ->
         regions = yaltai.yolo_adapter.segment(yolo_model, device=device, input=input)
         res = yaltai.kraken_adapter.segment(
             im, text_direction, mask=mask, model=model, device=device,
-            regions=regions
+            regions=regions, ignore_lignes=ignore_lines
         )
     except Exception as E:
         if ctx.meta['raise_failed']:
@@ -225,7 +225,9 @@ def process_pipeline(subcommands, input, batch_input, suffix, verbose, format_ty
               'suppressing page areas for line detection. 0-valued image '
               'regions are ignored for segmentation purposes. Disables column '
               'detection.')
-def segment(ctx, model, text_direction, mask, yolo):
+@click.option('-n', '--ignore-lines', show_default=True, default=False, is_flag=True,
+              help='Does not run line segmentation through Kraken, only Zone from YOLO')
+def segment(ctx, model, text_direction, mask, yolo, ignore_lines):
     """
     Segments page images into text lines.
     """
@@ -252,7 +254,7 @@ def segment(ctx, model, text_direction, mask, yolo):
 
         message('\u2713', fg='green')
 
-    return partial(segmenter, model, text_direction, mask, ctx.meta['device'], yolo)
+    return partial(segmenter, model, text_direction, mask, ctx.meta['device'], yolo, ignore_lines)
 
 
 if __name__ == "__main__":

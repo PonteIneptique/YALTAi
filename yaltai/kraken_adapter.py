@@ -19,7 +19,8 @@ def segment(im: PIL.Image.Image,
             reading_order_fn: Callable = polygonal_reading_order,
             model: Union[List[vgsl.TorchVGSLModel], vgsl.TorchVGSLModel] = None,
             device: str = 'cpu',
-            regions: Optional[Dict[str, List[List[int]]]] = None) -> Dict[str, Any]:
+            regions: Optional[Dict[str, List[List[int]]]] = None,
+            ignore_lignes: bool = False) -> Dict[str, Any]:
     r"""
     Segments a page into text lines using the baseline segmenter.
 
@@ -80,6 +81,13 @@ def segment(im: PIL.Image.Image,
 
     im_str = get_im_str(im)
     logger.info(f'Segmenting {im_str}')
+
+    if ignore_lignes:
+        return {'text_direction': text_direction,
+                'type': 'baselines',
+                'lines': [],
+                'regions': regions,
+                'script_detection': False}
 
     for net in model:
         if 'topline' in net.user_metadata:
