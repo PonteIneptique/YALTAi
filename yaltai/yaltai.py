@@ -10,6 +10,7 @@ import re
 import sys
 from typing import List, Optional
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
@@ -81,7 +82,7 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
 
     for idx, file in tqdm(enumerate(input)):
         parsed = parse_xml(file)
-        image_path = parsed["image"]
+        image_path: Path = parsed["image"]
         regions = parsed["regions"]
         for region in regions:
             if map_zones(region) not in Zones:
@@ -113,8 +114,8 @@ def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str]
                 path = f"{output}/val"
 
         src_img = image_path
-        ext = src_img.split(".")[-1]
-        simplified_name = '.'.join(os.path.basename(image_path).split('.')[:-1])
+        ext = src_img.suffix[1:]  # Suffix keeps the dot, we remove it
+        simplified_name = src_img.stem
 
         if image:
             if ext.lower() not in {"jpg", "jpeg"}:
