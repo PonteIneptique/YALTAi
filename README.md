@@ -39,7 +39,7 @@ python train.py --data "../my-dataset/config.yml" --batch-size 4 --img 640 --wei
 
 YALTAi has the same CLI interface as Kraken, so:
 
-- You can use base BLLA model for line or provide yours with `-m model.mlmodel`
+- You can use base BLLA model for line or provide yours with `-i model.mlmodel`
 - Use a GPU (`--device cuda:0`) or a CPU (`--device cpu`)
 - Apply on batch (`*.jpg`)
 
