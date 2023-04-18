@@ -32,6 +32,8 @@ def cli():
 
 @cli.command("alto-to-yolo")
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, file_okay=True), nargs=-1)
+@click.option("--manifest", type=click.Path(exists=True, dir_okay=False, file_okay=True), default=None,
+              help="Path to a manifest file containing paths to ALTO-XML files.")
 @click.argument("output", type=click.Path(dir_okay=True, file_okay=False))
 @click.option("--segmonto", type=click.Choice(["region", "subtype", "full"]), default=None,
               help="If you use Segmonto, helper to cut the class and merge them at different levels")
@@ -41,10 +43,17 @@ def cli():
               help="Format for the score table", default=None, show_default=True)
 @click.option("--image/--no-image", type=bool, default=True, show_default=True,
               help="Copy images when converting ALTO to YOLOv5")
-def convert(input: List[click.Path], output: click.Path, segmonto: Optional[str], shuffle: Optional[float],
-            labelmap: Optional[str], image: bool):
+def convert(input: Optional[List[click.Path]], output: click.Path, segmonto: Optional[str], shuffle: Optional[float],
+            labelmap: Optional[str], image: bool, manifest: Optional[click.Path]):
+
     """ Converts ALTO-XML files to YOLOv5 training files
     """
+    if manifest:
+        with open(manifest, 'r') as f:
+            input = f.read().splitlines()
+    else:
+        input_paths = input
+        
     if shuffle:
         message(f"Shuffling data with a ratio of {shuffle} for validation.", fg='green')
         os.makedirs(f"{output}/train/labels", exist_ok=True)
