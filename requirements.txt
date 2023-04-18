@@ -1,20 +1,21 @@
-kraken==4.3.6
+kraken==4.3.10
 mean-average-precision==2021.4.26.0
 tabulate~=0.8.10
 # From https://raw.githubusercontent.com/ultralytics/yolov5/v6.2/requirements.txt
-matplotlib>=3.2.2
+matplotlib~=3.2.2
 numpy<=1.23.99,>=1.23.0
 opencv-python>=4.1.1
-Pillow>=7.1.2
-PyYAML>=5.3.1
-requests>=2.23.0
-scipy>=1.4.1
-tqdm>=4.64.0
+Pillow~=9.2.0
+PyYAML~=5.4.0
+pytorch-lightning~=2.0.0
+requests~=2.23.0
+scipy~=1.4.1
+tqdm~=4.64.0
 protobuf<=3.20.1  # https://github.com/ultralytics/yolov5/issues/8012
-tensorboard>=2.4.1
-pandas>=1.1.4
-seaborn>=0.11.0
+tensorboard~=2.4.1
+pandas~=1.1.4
+seaborn~=0.11.0
 ipython
 psutil  # system utilization
-thop>=0.1.1  # FLOPs computation
+thop~=0.1.1  # FLOPs computation
 fast_deskew
