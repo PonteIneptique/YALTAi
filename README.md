@@ -32,7 +32,7 @@ cd yolov5
 git checkout v6.2
 pip install -r requirements.txt  # install
 # Train your YOLOv5 data (YOLOv5 is installed with YALTAi)
-python train.py --data "../my-dataset/config.yml" --batch-size 4 --img 640 --weights yolov5x.pt --epochs 50
+python train.py --data "../my-dataset/config.yml" --batch-size 4 --img 1280 --weights yolov5x6.pt --epochs 50
 ```
 
 ## Predicting
