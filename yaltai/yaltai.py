@@ -8,7 +8,7 @@ import os
 import random
 import re
 import sys
-from typing import List, Optional
+from typing import List, Optional, Union
 from collections import Counter
 from pathlib import Path
 
@@ -25,6 +25,12 @@ from yaltai.converter import AltoToYoloZone, parse_box_labels, read_labelmap, Yo
 from mean_average_precision import MetricBuilder
 
 
+def _read_manifest(manifest: Union[str, Path]) -> List[str]:
+    with open(manifest, 'r') as f:
+        out = [x.strip() for x in f.read().splitlines() if x.strip()]
+    return out
+
+
 @click.group()
 def cli():
     """ `yaltai` commands provides conversion options """
@@ -32,9 +38,13 @@ def cli():
 
 @cli.command("alto-to-yolo")
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, file_okay=True), nargs=-1)
-@click.option("--manifest", type=click.Path(exists=True, dir_okay=False, file_okay=True), default=None,
-              help="Path to a manifest file containing paths to ALTO-XML files.")
 @click.argument("output", type=click.Path(dir_okay=True, file_okay=False))
+@click.option("--manifest", type=click.Path(exists=True, dir_okay=False, file_okay=True), default=None,
+              help="Path to a manifest file containing paths to ALTO-XML files [Use with shuffle].")
+@click.option("--train", type=click.Path(exists=True, dir_okay=False, file_okay=True), default=None,
+              help="Path to a manifest file containing paths to ALTO-XML files for train only [Ignores shuffle].")
+@click.option("--val", type=click.Path(exists=True, dir_okay=False, file_okay=True), default=None,
+              help="Path to a manifest file containing paths to ALTO-XML files for validation only [Ignores shuffle].")
 @click.option("--segmonto", type=click.Choice(["region", "subtype", "full"]), default=None,
               help="If you use Segmonto, helper to cut the class and merge them at different levels")
 @click.option("--shuffle", type=float, default=None,
@@ -43,18 +53,46 @@ def cli():
               help="Format for the score table", default=None, show_default=True)
 @click.option("--image/--no-image", type=bool, default=True, show_default=True,
               help="Copy images when converting ALTO to YOLOv5")
-def convert(input: Optional[List[click.Path]], output: click.Path, segmonto: Optional[str], shuffle: Optional[float],
-            labelmap: Optional[str], image: bool, manifest: Optional[click.Path]):
+def convert(
+        input: Optional[List[click.Path]],
+        output: click.Path,
+        segmonto: Optional[str],
+        shuffle: Optional[float],
+        labelmap: Optional[str],
+        image: bool,
+        manifest: Optional[click.Path],
+        train: Optional[click.Path],
+        val: Optional[click.Path]
+):
 
     """ Converts ALTO-XML files to YOLOv5 training files
     """
+    val_idx: Optional[int] = None
+
     if manifest:
-        with open(manifest, 'r') as f:
-            input = f.read().splitlines()
+        message("Using single manifest", fg="blue")
+        input_paths = _read_manifest(manifest)
+    elif train and val:
+        message("Using train and validation manifests", fg="blue")
+        train = _read_manifest(train)
+        val = _read_manifest(val)
+        val_idx = len(train)
+        input_paths = train + val
     else:
         input_paths = input
-        
-    if shuffle:
+        message(f"Using list of inputs.", fg="blue")
+
+    message(f"Found {len(input_paths)} to convert.", fg="blue")
+
+    if val:
+        message(f"{len(val)} image for validation.", fg='green')
+    elif shuffle:
+        input_paths = list(input)
+        random.shuffle(input_paths)
+        val_idx = int(len(input_paths) * shuffle)
+        message(f"{val_idx+1}/{len(input_paths)} image for validation.", fg='green')
+
+    if shuffle or train:
         message(f"Shuffling data with a ratio of {shuffle} for validation.", fg='green')
         os.makedirs(f"{output}/train/labels", exist_ok=True)
         os.makedirs(f"{output}/val/labels", exist_ok=True)
@@ -65,13 +103,6 @@ def convert(input: Optional[List[click.Path]], output: click.Path, segmonto: Opt
         os.makedirs(f"{output}/labels", exist_ok=True)
         if image:
             os.makedirs(f"{output}/images", exist_ok=True)
-
-    val_idx: Optional[int] = None
-    if shuffle:
-        input = list(input)
-        random.shuffle(input)
-        val_idx = int(len(input) * shuffle)
-        message(f"{val_idx+1}/{len(input)} image for validation.", fg='green')
 
     def map_zones(zone_type: str) -> str:
         if segmonto:
@@ -89,7 +120,7 @@ def convert(input: Optional[List[click.Path]], output: click.Path, segmonto: Opt
 
     ZoneCounter = Counter()
 
-    for idx, file in tqdm(enumerate(input)):
+    for idx, file in tqdm(enumerate(input_paths)):
         parsed = parse_xml(file)
         image_path: Path = parsed["image"]
         regions = parsed["regions"]
@@ -143,7 +174,7 @@ def convert(input: Optional[List[click.Path]], output: click.Path, segmonto: Opt
         with open(f"{path}/labels/{simplified_name}.txt", "w") as f:
             f.write("\n".join([loc.yoloV5() for loc in local_file]))
 
-    message(f"{len(input)} ground truth XML files converted.", fg='green')
+    message(f"{len(input_paths)} ground truth XML files converted.", fg='green')
 
     with open(f"{output}/config.yml", "w") as f:
         data = {
