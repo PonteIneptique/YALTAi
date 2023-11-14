@@ -9,6 +9,9 @@ my-dataset
 ex
 table-test
 runs
+yolo-dataset
+*.tar.gz
+*.sh
 # PyCharm
 .idea
 # Byte-compiled / optimized / DLL files

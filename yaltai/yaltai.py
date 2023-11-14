@@ -39,6 +39,8 @@ def cli():
 @cli.command("alto-to-yolo")
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, file_okay=True), nargs=-1)
 @click.argument("output", type=click.Path(dir_okay=True, file_okay=False))
+@click.option("--single-class", type=str, default=None,
+              help="Map every class to a single one")
 @click.option("--manifest", type=click.Path(exists=True, dir_okay=False, file_okay=True), default=None,
               help="Path to a manifest file containing paths to ALTO-XML files [Use with shuffle].")
 @click.option("--train", type=click.Path(exists=True, dir_okay=False, file_okay=True), default=None,
@@ -47,6 +49,7 @@ def cli():
               help="Path to a manifest file containing paths to ALTO-XML files for validation only [Ignores shuffle].")
 @click.option("--segmonto", type=click.Choice(["region", "subtype", "full"]), default=None,
               help="If you use Segmonto, helper to cut the class and merge them at different levels")
+# ToDo: Merge classes in single class
 @click.option("--shuffle", type=float, default=None,
               help="Split into train and val")
 @click.option("-l", "--labelmap", type=click.Path(exists=True, file_okay=True, dir_okay=False),
@@ -56,6 +59,7 @@ def cli():
 def convert(
         input: Optional[List[click.Path]],
         output: click.Path,
+        single_class: Optional[str],
         segmonto: Optional[str],
         shuffle: Optional[float],
         labelmap: Optional[str],
@@ -112,6 +116,8 @@ def convert(
                 return re.search(r"([^:#]+)", zone_type).group()
             elif segmonto == "subtype":
                 return re.search(r"([^#]+)", zone_type).group()
+        elif single_class:
+            return single_class
         return zone_type
 
     Zones: List[str] = []
@@ -172,7 +178,7 @@ def convert(
                 shutil.copy(src_img, f"{path}/images/{simplified_name}.jpg")
 
         with open(f"{path}/labels/{simplified_name}.txt", "w") as f:
-            f.write("\n".join([loc.yoloV5() for loc in local_file]))
+            f.write("\n".join([loc.yoloV5() for loc in local_file if loc.yoloV5()]))
 
     message(f"{len(input_paths)} ground truth XML files converted.", fg='green')
 

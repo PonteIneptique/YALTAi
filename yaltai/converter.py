@@ -46,11 +46,15 @@ class AltoToYoloZone:
         return self._xywh
 
     def yoloV5(self):
-        return (f"{self.tag}"
-                f" {self.x_center / self.PAGE_WIDTH:.6f}"
-                f" {self.y_center / self.PAGE_HEIGHT:.6f}"
-                f" {self.width / self.PAGE_WIDTH:.6f}"
-                f" {self.height / self.PAGE_HEIGHT:.6f}")
+        try:
+            return (f"{self.tag}"
+                    f" {self.x_center / self.PAGE_WIDTH:.6f}"
+                    f" {self.y_center / self.PAGE_HEIGHT:.6f}"
+                    f" {self.width / self.PAGE_WIDTH:.6f}"
+                    f" {self.height / self.PAGE_HEIGHT:.6f}")
+        except Exception as E:
+            print(E)
+            return None
 
 
 @dataclass
