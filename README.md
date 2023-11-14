@@ -1,7 +1,7 @@
 # YALTAi
 You Actually Look Twice At it
 
-This provides an adapter for Kraken to use YOLOv5 Object Detection routine.
+This provides an adapter for Kraken to use YOLOv8 (1.0.0 update; use previous version to reuse YOLOv5 models) Object Detection routine.
 
 This tool can be used for both segmenting and conversion of models.
 
@@ -26,13 +26,7 @@ yaltai alto-to-yolo PATH/TO/ALTOorPAGE/*.xml my-dataset --shuffle .1 --segmonto 
 And then [train YOLO](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) 
 
 ```bash
-# Download YOLOv5
-git clone https://github.com/ultralytics/yolov5  # clone
-cd yolov5
-git checkout v6.2
-pip install -r requirements.txt  # install
-# Train your YOLOv5 data (YOLOv5 is installed with YALTAi)
-python train.py --data "../my-dataset/config.yml" --batch-size 4 --img 1280 --weights yolov5x6.pt --epochs 50
+yolo task=detect mode=train model=yolov8n.pt data=my-dataset/config.yml epochs=100 plots=True device=0 batch=8 imgsz=960
 ```
 
 ## Predicting
