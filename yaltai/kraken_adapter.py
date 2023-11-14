@@ -41,7 +41,7 @@ def segment(im: PIL.Image.Image,
         model: One or more TorchVGSLModel containing a segmentation model. If
                none is given a default model will be loaded.
         device: The target device to run the neural network on.
-        regions: Regions computed using YOLOv5
+        regions: Regions computed using YOLOv8
 
     Returns:
         A dictionary containing the text direction and under the key 'lines' a

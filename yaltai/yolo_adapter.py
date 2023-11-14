@@ -1,5 +1,6 @@
 from typing import List, Dict
-from torch import hub
+from ultralytics import YOLO
+from ultralytics.engine.results import Results
 
 from yaltai.preprocessing import deskew, rotatebox
 
@@ -19,43 +20,40 @@ def segment(
         ]
     }
     """
-    model = hub.load("ultralytics/yolov5:v6.2", "custom", path=model, device=device)
-    model.eval()
+    model = YOLO(model)
+    model.to(device)
     rotated_input = None
     angle = 0
+    predictions: List[Results] = []
     if apply_deskew:
         rotated_input, angle = deskew(input)
         if abs(angle) > max_angle:
-            prediction = model(input)
+            predictions = model.predict(input, save=False)
             rotated_input = None
         else:
-            prediction = model(rotated_input)
+            predictions = model.predict(rotated_input, save=False)
     else:
-        prediction = model(input)
+        predictions = model.predict(input, save=False)
 
-    if isinstance(prediction.names, dict):
-        names: List[str] = list(prediction.names.values())
-    else:
-        names: List[str] = list(prediction.names)
+    names: List[str] = list(set([
+        name
+        for res in predictions
+        for name in res.names.values()
+    ]))
 
     out = {
         name: []
         for name in names
     }
-    for i, (im, pred) in enumerate(zip(prediction.imgs, prediction.pred)):
-        if not pred.shape[0]:
-            return {}
-        for *box, conf, cls in reversed(pred):
-            cls_name = names[int(cls)]
-            box = [int(z.item()) for z in box]
-            x0, y0, x1, y1 = box
-
+    for pred in predictions:
+        for box, cls_id in zip(pred.boxes.xyxy, pred.boxes.cls):
+            cls_name = pred.names[cls_id.item()]
+            x0, y0, x1, y1 = box.tolist()
             points = [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]
+
             if apply_deskew and rotated_input is not None:
                 points = rotatebox(points, rotated_input, -angle)
                 points.append(points[0])
             out[cls_name].append(points)
 
     return out
-#https://traces6.paris.inria.fr/document/2084/part/220680/edit/
-#yaltai kraken -i ../valais-data/batch-14-FR/AEV_3090_1880_Monthey_Collombey-Muraz_Collombey_020.jpg ../valais-data/batch-14-FR/AEV_3090_1880_Monthey_Collombey-Muraz_Collombey_020.xml -f image --raise-on-error segment -y ../valais-recensement/yolov5/runs/train/exp7/weights/best.pt
