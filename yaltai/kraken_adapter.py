@@ -99,7 +99,7 @@ def segment(im: PIL.Image.Image,
         rets = compute_segmentation_map(im, mask, net, device)
 
         # We can't clear the heatmap of regions because it would mess up
-
+        # print(rets)
         if "regions" in rets:
             del rets["regions"]
 
@@ -110,7 +110,7 @@ def segment(im: PIL.Image.Image,
             line_regs.extend(regs)
             if rets['bounding_regions'] is not None and cls in rets['bounding_regions']:
                 suppl_obj.extend(regs)
-
+        # print(line_regs)
         # convert back to net scale
         suppl_obj = scale_regions(suppl_obj, 1/rets['scale'])
         line_regs = scale_regions(line_regs, 1/rets['scale'])
