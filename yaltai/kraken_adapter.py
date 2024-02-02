@@ -113,7 +113,6 @@ def segment(im: PIL.Image.Image,
         # print(line_regs)
         # convert back to net scale
         suppl_obj = scale_regions(suppl_obj, 1/rets['scale'])
-        line_regs = scale_regions(line_regs, 1/rets['scale'])
         lines = vec_lines(**rets,
                           regions=line_regs,
                           reading_order_fn=reading_order_fn,
