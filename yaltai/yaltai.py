@@ -8,7 +8,7 @@ import os
 import random
 import re
 import sys
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Set, Dict
 from collections import Counter
 from pathlib import Path
 
@@ -56,6 +56,8 @@ def cli():
               help="Format for the score table", default=None, show_default=True)
 @click.option("--image/--no-image", type=bool, default=True, show_default=True,
               help="Copy images when converting ALTO to YOLOv5")
+@click.option("--line-as-region", type=str, multiple=True,
+              help="Line that should be added for zone detection")
 def convert(
         input: Optional[List[click.Path]],
         output: click.Path,
@@ -66,7 +68,8 @@ def convert(
         image: bool,
         manifest: Optional[click.Path],
         train: Optional[click.Path],
-        val: Optional[click.Path]
+        val: Optional[click.Path],
+        line_as_region: Optional[List[str]]
 ):
 
     """ Converts ALTO-XML files to YOLOv5 training files
@@ -120,12 +123,15 @@ def convert(
             return single_class
         return zone_type
 
+    line_as_region: Set[str] = set(line_as_region or [])
+
     Zones: List[str] = []
     if labelmap:
         Zones = read_labelmap(labelmap)
 
     ZoneCounter = Counter()
 
+    # Count Zones
     for idx, file in tqdm(enumerate(input_paths)):
         parsed = parse_xml(file)
         image_path: Path = parsed["image"]
@@ -133,6 +139,14 @@ def convert(
         for region in regions:
             if map_zones(region) not in Zones:
                 Zones.append(map_zones(region))
+
+        processed_lines: List[Dict] = []
+
+        if line_as_region:
+            for line in parsed["lines"]:
+                if line.get("tags", {}).get("type") in line_as_region:
+                    Zones.append(line["tags"]["type"])
+                    processed_lines.append(line)
 
         # Retrieve image
         image_file = Image.open(image_path)
@@ -152,6 +166,20 @@ def convert(
                     )
                 )
                 ZoneCounter[Zones[region_id]] += 1
+
+        for line in processed_lines:
+            if not line.get("boundary"):
+                continue
+            region_id = Zones.index(line["tags"]["type"])
+            local_file.append(
+                AltoToYoloZone(
+                    BOX=line["boundary"],
+                    PAGE_WIDTH=width,
+                    PAGE_HEIGHT=height,
+                    tag=region_id
+                )
+            )
+            ZoneCounter[Zones[region_id]] += 1
 
         path = output
         if shuffle:
