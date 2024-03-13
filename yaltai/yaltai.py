@@ -145,7 +145,9 @@ def convert(
         if line_as_region:
             for line in parsed["lines"]:
                 if line.get("tags", {}).get("type") in line_as_region:
-                    Zones.append(line["tags"]["type"])
+                    line_type = line["tags"]["type"]
+                    if line_type not in Zones:
+                        Zones.append(line_type)
                     processed_lines.append(line)
 
         # Retrieve image
