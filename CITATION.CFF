@@ -1,0 +1,34 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: 'YALTAi: You Actually Look Twice At it'
+message: "If you use this software, please cite both the article from preferred-citation and the software itself."
+type: software
+authors:
+  - given-names: Thibault
+    family-names: Clérice
+    email: thibault.clerice@inria.fr
+    affiliation: Inria
+    orcid: 'https://orcid.org/0000-0003-1852-9204'
+identifiers:
+  - type: swh
+    value: 'swh:1:snp:d9ca209ae2271537ff57d3748c8a76c49fd6222b'
+  - type: other
+    value: 'https://enc.hal.science/hal-03723208v3'
+    description: Paper
+repository-code: 'https://github.com/PonteIneptique/yaltai'
+url: 'https://pypi.org/project/YALTAi/'
+license: GPL-3.0
+version: 1.0.0
+date-released: '2023-01-01'
+preferred-citation:
+  authors:
+    - family-names: Clérice
+      given-names: Thibault
+  title: "You Actually Look Twice At it (YALTAi): using an object detection approach instead of region segmentation within the Kraken engine"
+  type: article
+  volume-title: 'Historical Documents and automatic text recognition'
+  journal: "Journal of Data Mining & Digital Humanities"
+  doi:  'doi.org/10.46298/jdmdh.9806'
+  date-published: "2023-12-01"
