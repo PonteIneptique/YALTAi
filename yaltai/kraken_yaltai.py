@@ -11,6 +11,7 @@ from kraken.kraken import (
 )
 from PIL import Image
 from kraken.lib.progress import KrakenProgressBar
+from ultralytics import YOLO
 
 
 def segmenter(model, text_direction, mask, device, yolo_model, ignore_lines, deskew, max_angle, input, output) -> None:
@@ -43,8 +44,7 @@ def segmenter(model, text_direction, mask, device, yolo_model, ignore_lines, des
     res: Dict[str, Any] = None
     try:
         regions = yaltai.yolo_adapter.segment(
-            yolo_model,
-            device=device, input=input,
+            yolo_model, input=input,
             apply_deskew=deskew, max_angle=max_angle
         )
         res = yaltai.kraken_adapter.segment(
@@ -264,6 +264,9 @@ def segment(ctx, model, text_direction, mask, yolo, ignore_lines, deskew, max_an
         ctx.exit(1)
 
         message('\u2713', fg='green')
+
+    yolo = YOLO(yolo)
+    yolo.to(ctx.meta["device"])
 
     return partial(segmenter, model, text_direction, mask, ctx.meta['device'], yolo, ignore_lines, deskew, max_angle)
 

@@ -6,8 +6,7 @@ from yaltai.preprocessing import deskew, rotatebox
 
 
 def segment(
-        model: str,
-        device: str,
+        model: YOLO,
         input: str,
         apply_deskew: bool = False,
         max_angle: float = 10.0
@@ -20,8 +19,6 @@ def segment(
         ]
     }
     """
-    model = YOLO(model)
-    model.to(device)
     rotated_input = None
     angle = 0
     predictions: List[Results] = []
