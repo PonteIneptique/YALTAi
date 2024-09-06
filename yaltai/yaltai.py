@@ -75,6 +75,7 @@ def convert(
     """ Converts ALTO-XML files to YOLOv5 training files
     """
     val_idx: Optional[int] = None
+    input_paths: List[str] = []
 
     if manifest:
         message("Using single manifest", fg="blue")
@@ -94,7 +95,6 @@ def convert(
     if val:
         message(f"{len(val)} image for validation.", fg='green')
     elif shuffle:
-        input_paths = list(input)
         random.shuffle(input_paths)
         val_idx = int(len(input_paths) * shuffle)
         message(f"{val_idx+1}/{len(input_paths)} image for validation.", fg='green')
