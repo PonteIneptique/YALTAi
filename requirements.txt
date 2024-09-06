@@ -1,6 +1,5 @@
-kraken==4.3.13
+kraken==5.2.9
 mean-average-precision==2021.4.26.0
 tabulate~=0.8.10
-# From https://raw.githubusercontent.com/ultralytics/yolov5/v6.2/requirements.txt
 ultralytics==8.0.209
 fast_deskew==1.0
