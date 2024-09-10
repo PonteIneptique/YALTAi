@@ -18,7 +18,7 @@ from PIL import Image
 import click
 import yaml
 from kraken.kraken import message
-from kraken.lib.xml import parse_xml
+#from kraken.lib.xml import parse_xml
 import tabulate
 
 from yaltai.converter import AltoToYoloZone, parse_box_labels, read_labelmap, YoloV5Zone
