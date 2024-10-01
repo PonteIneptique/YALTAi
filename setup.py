@@ -105,7 +105,7 @@ setup(
     # py_modules=['mypackage'],
 
     entry_points={
-        'console_scripts': ['yaltai=yaltai.cli.yaltai:cli'],
+        'console_scripts': ['yaltai=yaltai.cli.yaltai:yaltai_cli'],
     },
     install_requires=REQUIRED,
     extras_require=EXTRAS,

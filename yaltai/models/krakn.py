@@ -161,6 +161,11 @@ def segment(im: PIL.Image.Image,
 
         lines.extend(_lines)
 
+    # Rounding !
+    for reg_class in regions:
+        for reg_obj in regions[reg_class]:
+            reg_obj.boundary = list(map(lambda x: list(map(round, x)), reg_obj.boundary))
+
     if len(rets['cls_map']['baselines']) > 1:
         script_detection = True
     else:

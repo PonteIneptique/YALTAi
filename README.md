@@ -20,7 +20,7 @@ Convert (and split optionally) your data
 ```bash
 # Keeps .1 data in the validation set and convert all alto into YOLOv5 format
 #  Keeps the segmonto information up to the regions
-yaltai alto-to-yolo PATH/TO/ALTOorPAGE/*.xml my-dataset --shuffle .1 --segmonto region
+yaltai convert alto-to-yolo PATH/TO/ALTOorPAGE/*.xml my-dataset --shuffle .1 --segmonto region
 ```
 
 And then [train YOLO](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data) 

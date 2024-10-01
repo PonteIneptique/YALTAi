@@ -42,11 +42,11 @@ def segmenter(model, text_direction, mask, device, yolo_model, ignore_lines, des
 
     message(f'Segmenting {ctx.meta["orig_file"]}\t', nl=False)
     try:
-        regions = yaltai.models.yolo_adapter.segment(
+        regions = yaltai.models.yolo.segment(
             yolo_model, input=input,
             apply_deskew=deskew, max_angle=max_angle
         )
-        res: Segmentation = yaltai.models.kraken_adapter.segment(
+        res: Segmentation = yaltai.models.krakn.segment(
             im, text_direction, mask=mask, model=model, device=device,
             regions=regions, ignore_lignes=ignore_lines,
             raise_on_error=ctx.meta['raise_failed'], autocast=ctx.meta["autocast"]
@@ -117,7 +117,7 @@ def yaltai_segment(ctx, model, text_direction, mask, yolo, ignore_lines, deskew,
     if not model:
         model = SEGMENTATION_DEFAULT_MODEL
     if not yolo:
-        raise Exception("No YOLOv5 model given")
+        raise Exception("No YOLOv8 model given")
     ctx.meta['steps'].append({'category': 'processing',
                               'description': 'Baseline and region segmentation',
                               'settings': {'model': os.path.basename(model),
