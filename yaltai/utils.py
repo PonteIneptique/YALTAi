@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from collections import namedtuple
 from typing import List, Tuple, Optional, Dict, Union
+from pathlib import Path
 import numpy as np
 
 XYXY = namedtuple("XYXY", ["x0", "y0", "x1", "y1"])
@@ -89,6 +90,13 @@ def parse_box_labels(
     files: List[str],
     gt: bool = True
 ) -> Tuple[Dict[str, Union[List[Union[XYXY, int]]]], List[np.array]]:
+    """Parse a list of YOLO/COCO BB annotation files
+
+    This function is only used to compute metrics
+
+    :param files: List of file path in YOLO / COCO formats
+    :param gt: If data are ground Truth of if they are predicted (I don't remember why)
+    """
     parsed = {"boxes": [], "labels": []}
     arrays = []
     for file in sorted(files):
@@ -109,7 +117,16 @@ def parse_box_labels(
 
 
 def read_labelmap(path: str) -> List[str]:
-    lines = []
+    """ Reads a labelmap YAML file and parses the classes
+    """
     with open(path) as f:
-        lines = f.read().split()
+        lines = [line.strip() for line in f.read().split() if line.strip()]
     return lines
+
+
+def read_manifest(manifest: Union[str, Path]) -> List[str]:
+    """ Reads a manifest (for training purposes ?)
+    """
+    with open(manifest, 'r') as f:
+        out = [x.strip() for x in f.read().splitlines() if x.strip()]
+    return out

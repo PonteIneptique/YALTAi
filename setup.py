@@ -105,7 +105,7 @@ setup(
     # py_modules=['mypackage'],
 
     entry_points={
-        'console_scripts': ['yaltai=yaltai.yaltai:cli', 'kraken-yaltai=yaltai.kraken_yaltai:cli'],
+        'console_scripts': ['yaltai=yaltai.cli.yaltai:cli'],
     },
     install_requires=REQUIRED,
     extras_require=EXTRAS,

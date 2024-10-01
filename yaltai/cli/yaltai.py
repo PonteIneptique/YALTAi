@@ -17,26 +17,26 @@ from tqdm import tqdm
 from PIL import Image
 import click
 import yaml
-from kraken.kraken import message
-#from kraken.lib.xml import parse_xml
 import tabulate
 
-from yaltai.converter import AltoToYoloZone, parse_box_labels, read_labelmap, YoloV5Zone
+
+from kraken.kraken import message
+from kraken.lib.xml import XMLPage
+from yaltai.utils import AltoToYoloZone, parse_box_labels, read_labelmap, YoloV5Zone, read_manifest
 from mean_average_precision import MetricBuilder
 
 
-def _read_manifest(manifest: Union[str, Path]) -> List[str]:
-    with open(manifest, 'r') as f:
-        out = [x.strip() for x in f.read().splitlines() if x.strip()]
-    return out
-
-
 @click.group()
-def cli():
+def yaltai_cli():
     """ `yaltai` commands provides conversion options """
 
 
-@cli.command("alto-to-yolo")
+@yaltai_cli.group("convert")
+def convert():
+    """ Converts formats to various other formats """
+
+
+@convert.command("alto-to-yolo")
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, file_okay=True), nargs=-1)
 @click.argument("output", type=click.Path(dir_okay=True, file_okay=False))
 @click.option("--single-class", type=str, default=None,
@@ -58,7 +58,7 @@ def cli():
               help="Copy images when converting ALTO to YOLOv5")
 @click.option("--line-as-region", type=str, multiple=True,
               help="Line that should be added for zone detection")
-def convert(
+def alto_to_yolo(
         input: Optional[List[click.Path]],
         output: click.Path,
         single_class: Optional[str],
@@ -79,16 +79,16 @@ def convert(
 
     if manifest:
         message("Using single manifest", fg="blue")
-        input_paths = _read_manifest(manifest)
+        input_paths = read_manifest(manifest)
     elif train and val:
         message("Using train and validation manifests", fg="blue")
-        train = _read_manifest(train)
-        val = _read_manifest(val)
+        train = read_manifest(train)
+        val = read_manifest(val)
         val_idx = len(train)
         input_paths = train + val
     else:
-        input_paths = input
         message(f"Using list of inputs.", fg="blue")
+        input_paths = input
 
     message(f"Found {len(input_paths)} to convert.", fg="blue")
 
@@ -133,17 +133,18 @@ def convert(
 
     # Count Zones
     for idx, file in tqdm(enumerate(input_paths)):
-        parsed = parse_xml(file)
-        image_path: Path = parsed["image"]
-        regions = parsed["regions"]
+        parsed = XMLPage(file)
+        image_path: Path = parsed.imagename
+        # We record each region identifier and map the region if required
+        regions = parsed.regions
         for region in regions:
             if map_zones(region) not in Zones:
                 Zones.append(map_zones(region))
 
         processed_lines: List[Dict] = []
 
-        if line_as_region:
-            for line in parsed["lines"]:
+        if line_as_region:  # ToDo: Adapt to new system
+            for line in parsed.lines:
                 if line.get("tags", {}).get("type") in line_as_region:
                     line_type = line["tags"]["type"]
                     if line_type not in Zones:
@@ -158,10 +159,10 @@ def convert(
         local_file: List[AltoToYoloZone] = []
         for region, examples in regions.items():
             region_id = Zones.index(map_zones(region))
-            for box in examples:
+            for region_obj in examples:
                 local_file.append(
                     AltoToYoloZone(
-                        BOX=box,
+                        BOX=region_obj.boundary,
                         PAGE_WIDTH=width,
                         PAGE_HEIGHT=height,
                         tag=region_id
@@ -242,7 +243,7 @@ def convert(
         message(f"\t- {cnt:05} {zone}", fg='blue')
 
 
-@cli.command("scores")
+@yaltai_cli.command("scores")
 @click.argument("gt-directory", type=click.Path(exists=True, dir_okay=True, file_okay=False))
 @click.argument("pred-directory", type=click.Path(dir_okay=True, file_okay=False, exists=True))
 @click.option("-t", "--threshold", type=float, help="IoU Threshold", default=.5, show_default=True)
@@ -310,7 +311,7 @@ def get_scores(gt_directory, pred_directory, threshold, format, labelmap, save_j
         }, save_json)
 
 
-@cli.command("yolo-to-alto")
+@convert.command("yolo-to-alto")
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, file_okay=True), nargs=-1)
 @click.option("-l", "--labelmap", type=click.Path(exists=True, file_okay=True, dir_okay=False),
               help="Format for the score table", default=None, show_default=True)
@@ -327,19 +328,19 @@ def yolo_to_alto(input, labelmap):
         for idx, zone in enumerate(labelmap)
     ])
 
-    with open(os.path.join(os.path.dirname(__file__), "template.xml")) as f:
+    with open(os.path.join(os.path.dirname(__file__), "../template.xml")) as f:
         TEMPLATE = f.read()
 
     for file in input:
         xml_name = file[:-4] + ".xml"
         img_file_name = os.path.basename(file[:-4]) + ".jpg"
         zones = []
-        if os.path.exists(os.path.join(os.path.dirname(file), "..", "images", img_file_name)):
-            img_name = os.path.join(os.path.dirname(file), "..", "images", img_file_name)
+        if os.path.exists(os.path.join(os.path.dirname(file), "../..", "images", img_file_name)):
+            img_name = os.path.join(os.path.dirname(file), "../..", "images", img_file_name)
             img_for_xml_name = f"../images/{img_file_name}"
-        elif os.path.exists(os.path.join(os.path.dirname(file), "..", "images", img_file_name)):
-            img_name = os.path.join(os.path.dirname(file), "..", "images", img_file_name)
-            img_for_xml_name = os.path.join("..", img_file_name)
+        elif os.path.exists(os.path.join(os.path.dirname(file), "../..", "images", img_file_name)):
+            img_name = os.path.join(os.path.dirname(file), "../..", "images", img_file_name)
+            img_for_xml_name = os.path.join("../..", img_file_name)
         else:
             message(f"Can't find the image for {img_file_name}")
             sys.exit(0)
@@ -379,10 +380,10 @@ def yolo_to_alto(input, labelmap):
             )
 
 
-import yaltai.kraken_yaltai as kyaltai
+from yaltai.cli.krakn import kcli
 
-cli.add_command(kyaltai.cli, "kraken")
+yaltai_cli.add_command(kcli, "kraken")
 
 
 if __name__ == "__main__":
-    cli()
+    yaltai_cli()
