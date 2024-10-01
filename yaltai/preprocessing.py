@@ -19,14 +19,14 @@ def rotatebox(bbox: List[List[int]], image: Image.Image, angle: float):
     rotated_bbox = []
 
     for i, coord in enumerate(bbox):
-      rot_matrix = cv2.getRotationMatrix2D((image_center_x, image_center_y), angle, 1.0)
-      cosinus, sinus = abs(rot_matrix[0, 0]), abs(rot_matrix[0, 1])
-      new_width = int((height * sinus) + (width * cosinus))
-      new_height = int((height * cosinus) + (width * sinus))
-      rot_matrix[0, 2] += (new_width / 2) - image_center_x
-      rot_matrix[1, 2] += (new_height / 2) - image_center_y
-      v = [coord[0], coord[1], 1]  # ?
-      adjusted_coord = np.dot(rot_matrix, v)
-      rotated_bbox.append((int(adjusted_coord[0]), int(adjusted_coord[1])))
+        rot_matrix = cv2.getRotationMatrix2D((image_center_x, image_center_y), angle, 1.0)
+        cosinus, sinus = abs(rot_matrix[0, 0]), abs(rot_matrix[0, 1])
+        new_width = int((height * sinus) + (width * cosinus))
+        new_height = int((height * cosinus) + (width * sinus))
+        rot_matrix[0, 2] += (new_width / 2) - image_center_x
+        rot_matrix[1, 2] += (new_height / 2) - image_center_y
+        v = [coord[0], coord[1], 1]  # ?
+        adjusted_coord = np.dot(rot_matrix, v)
+        rotated_bbox.append((int(adjusted_coord[0]), int(adjusted_coord[1])))
 
     return rotated_bbox
