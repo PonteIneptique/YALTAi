@@ -60,7 +60,6 @@ def test_yaltai_single_alto_to_xml(custom_logger):
             os.path.join(os.path.abspath(os.path.dirname(__file__)), "nano-yolo-ladas.pt")
         ]
     )
-    print(result.output)
     assert result.exit_code == 0
     assert "page1.jpg: 640x352 2 GraphicZones, 1 MainZone-P-Continued, 1 MainZone-Sp, 2 QuireMarksZones" in "\n".join([
         record[1]
