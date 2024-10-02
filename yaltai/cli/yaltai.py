@@ -88,13 +88,14 @@ def alto_to_yolo(
         input_paths = train + val
     else:
         message(f"Using list of inputs.", fg="blue")
-        input_paths = input
+        input_paths = list(map(str, input))
 
     message(f"Found {len(input_paths)} to convert.", fg="blue")
 
     if val:
         message(f"{len(val)} image for validation.", fg='green')
     elif shuffle:
+        print("HELLLOOO MOTHER FUCKER")
         random.shuffle(input_paths)
         val_idx = int(len(input_paths) * shuffle)
         message(f"{val_idx+1}/{len(input_paths)} image for validation.", fg='green')
