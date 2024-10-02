@@ -95,7 +95,6 @@ def alto_to_yolo(
     if val:
         message(f"{len(val)} image for validation.", fg='green')
     elif shuffle:
-        print("HELLLOOO MOTHER FUCKER")
         random.shuffle(input_paths)
         val_idx = int(len(input_paths) * shuffle)
         message(f"{val_idx+1}/{len(input_paths)} image for validation.", fg='green')
