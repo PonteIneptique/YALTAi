@@ -1,5 +1,6 @@
 import tempfile
 import os
+import glob
 from click.testing import CliRunner
 
 from yaltai.cli.yaltai import yaltai_cli
@@ -38,3 +39,24 @@ def test_yaltai_single_alto_to_xml():
             ['3', '0.616390', '0.727500', '0.576050', '0.161861'],
             ['3', '0.611639', '0.819167', '0.583077', '0.022773']
         ]
+
+
+def test_yaltai_shuffle_alto_to_xml():
+    """Ensures that we can convert to YOLO format"""
+    runner = CliRunner()
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        # Run the Click command
+        result = runner.invoke(
+            yaltai_cli,
+            [
+                "convert",
+                "alto-to-yolo",
+                "--shuffle",
+                ".3",
+                *glob.glob(os.path.join(os.path.abspath(os.path.dirname(__file__)), "test_files", "alto_dataset", "*.xml")),
+                tempdir,
+            ])
+        assert "Found 3 to convert." in result.output
+        assert "1/3 image for validation." in result.output
+        assert result.exit_code == 0
