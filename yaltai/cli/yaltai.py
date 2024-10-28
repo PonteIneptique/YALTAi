@@ -160,16 +160,18 @@ def alto_to_yolo(
         for region, examples in regions.items():
             region_id = Zones.index(map_zones(region))
             for region_obj in examples:
-                local_file.append(
-                    AltoToYoloZone(
-                        BOX=region_obj.boundary,
-                        PAGE_WIDTH=width,
-                        PAGE_HEIGHT=height,
-                        tag=region_id
+                if region_obj.boundary:
+                    local_file.append(
+                        AltoToYoloZone(
+                            BOX=region_obj.boundary,
+                            PAGE_WIDTH=width,
+                            PAGE_HEIGHT=height,
+                            tag=region_id
+                        )
                     )
-                )
-                ZoneCounter[Zones[region_id]] += 1
+                    ZoneCounter[Zones[region_id]] += 1
 
+        # This is only triggered if we have region_as_lines
         for line in processed_lines:
             if not line.get("boundary"):
                 continue
@@ -212,6 +214,10 @@ def alto_to_yolo(
             f.write("\n".join([loc.yoloV5() for loc in local_file if loc.yoloV5()]))
 
     message(f"{len(input_paths)} ground truth XML files converted.", fg='green')
+
+    for zone in ZoneCounter:
+        if ZoneCounter[zone] == 0:
+            del Zones[zone]
 
     with open(f"{output}/config.yml", "w") as f:
         data = {
