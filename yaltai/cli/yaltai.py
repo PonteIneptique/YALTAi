@@ -144,12 +144,12 @@ def alto_to_yolo(
         processed_lines: List[Dict] = []
 
         if line_as_region:  # ToDo: Adapt to new system
-            for line in parsed.lines:
-                if line.get("tags", {}).get("type") in line_as_region:
-                    line_type = line["tags"]["type"]
+            for _, line_obj in parsed.lines.items():
+                if line_obj.tags.get("type") in line_as_region:
+                    line_type = line_obj.tags["type"]
                     if line_type not in Zones:
                         Zones.append(line_type)
-                    processed_lines.append(line)
+                    processed_lines.append(line_obj)
 
         # Retrieve image
         image_file = Image.open(image_path)
@@ -171,12 +171,12 @@ def alto_to_yolo(
                 ZoneCounter[Zones[region_id]] += 1
 
         for line in processed_lines:
-            if not line.get("boundary"):
+            if not line.boundary:
                 continue
-            region_id = Zones.index(line["tags"]["type"])
+            region_id = Zones.index(line.tags["type"])
             local_file.append(
                 AltoToYoloZone(
-                    BOX=line["boundary"],
+                    BOX=line.boundary,
                     PAGE_WIDTH=width,
                     PAGE_HEIGHT=height,
                     tag=region_id

@@ -105,3 +105,26 @@ def test_yaltai_single_alto_to_xml(custom_logger):
 
     assert len([line.baseline for line in page.lines.values()])
     # ToDo: Add a test to check for line being part of regions
+
+
+def test_alto_to_yolo_with_lines(custom_logger):
+    """Test line region detection in ALTO to YOLO conversion"""
+    runner = CliRunner()
+    test_files_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "test_files")
+    
+    result = runner.invoke(
+        yaltai_cli,
+        [
+            "convert", "alto-to-yolo",
+            os.path.join(test_files_dir, "page1.xml"),
+            "test_output",
+            "--line-as-region", "default"
+        ]
+    )
+    
+    assert result.exit_code == 0
+    assert os.path.exists("test_output/labels/page1.txt")
+    
+    # Verify line detection
+    page = XMLPage(os.path.join(test_files_dir, "page1.xml"))
+    assert any(line.tags.get("type") == "default" for line in page.lines.values())
