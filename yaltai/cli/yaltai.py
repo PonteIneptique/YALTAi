@@ -41,6 +41,7 @@ def convert():
 @click.argument("output", type=click.Path(dir_okay=True, file_okay=False))
 @click.option("--single-class", type=str, default=None,
               help="Map every class to a single one")
+@click.option("--ignore", type=str, default=None, multiple=True)
 @click.option("--manifest", type=click.Path(exists=True, dir_okay=False, file_okay=True), default=None,
               help="Path to a manifest file containing paths to ALTO-XML files [Use with shuffle].")
 @click.option("--train", type=click.Path(exists=True, dir_okay=False, file_okay=True), default=None,
@@ -57,7 +58,7 @@ def convert():
 @click.option("--image/--no-image", type=bool, default=True, show_default=True,
               help="Copy images when converting ALTO to YOLOv5")
 @click.option("--line-as-region", type=str, multiple=True,
-              help="Line that should be added for zone detection")
+              help="Line-type that should be added for zone detection")
 def alto_to_yolo(
         input: Optional[List[click.Path]],
         output: click.Path,
@@ -69,7 +70,8 @@ def alto_to_yolo(
         manifest: Optional[click.Path],
         train: Optional[click.Path],
         val: Optional[click.Path],
-        line_as_region: Optional[List[str]]
+        line_as_region: Optional[List[str]],
+        ignore: Optional[List[str]]
 ):
 
     """ Converts ALTO-XML files to YOLOv5 training files
@@ -138,7 +140,7 @@ def alto_to_yolo(
         # We record each region identifier and map the region if required
         regions = parsed.regions
         for region in regions:
-            if map_zones(region) not in Zones:
+            if map_zones(region) not in Zones and not map_zones(region) in ignore and not region in ignore:
                 Zones.append(map_zones(region))
 
         processed_lines: List[Dict] = []
@@ -158,22 +160,29 @@ def alto_to_yolo(
 
         local_file: List[AltoToYoloZone] = []
         for region, examples in regions.items():
-            region_id = Zones.index(map_zones(region))
+            mapped = map_zones(region)
+            if region in ignore or mapped in ignore:
+                continue
+            region_id = Zones.index(mapped)
             for region_obj in examples:
-                local_file.append(
-                    AltoToYoloZone(
-                        BOX=region_obj.boundary,
-                        PAGE_WIDTH=width,
-                        PAGE_HEIGHT=height,
-                        tag=region_id
+                if region_obj.boundary:
+                    local_file.append(
+                        AltoToYoloZone(
+                            BOX=region_obj.boundary,
+                            PAGE_WIDTH=width,
+                            PAGE_HEIGHT=height,
+                            tag=region_id
+                        )
                     )
-                )
-                ZoneCounter[Zones[region_id]] += 1
+                    ZoneCounter[Zones[region_id]] += 1
 
+        # This is only triggered if we have region_as_lines
         for line in processed_lines:
             if not line.boundary:
                 continue
             region_id = Zones.index(line.tags["type"])
+            if Zones[region_id] in ignore:
+                continue
             local_file.append(
                 AltoToYoloZone(
                     BOX=line.boundary,
@@ -212,6 +221,15 @@ def alto_to_yolo(
             f.write("\n".join([loc.yoloV5() for loc in local_file if loc.yoloV5()]))
 
     message(f"{len(input_paths)} ground truth XML files converted.", fg='green')
+
+    for zone in ZoneCounter:
+        if ZoneCounter[zone] == 0 and not labelmap:
+            Zones.pop(Zones.index(zone))
+            print(f"Zone {zone} removed from zones")
+    for zone in ignore:
+        if zone in Zones:
+            Zones.pop(Zones.index(zone))
+            print(f"Zone {zone} removed from zones")
 
     with open(f"{output}/config.yml", "w") as f:
         data = {
@@ -314,7 +332,7 @@ def get_scores(gt_directory, pred_directory, threshold, format, labelmap, save_j
 @convert.command("yolo-to-alto")
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, file_okay=True), nargs=-1)
 @click.option("-l", "--labelmap", type=click.Path(exists=True, file_okay=True, dir_okay=False),
-              help="Format for the score table", default=None, show_default=True)
+              help="Labels", default=None, show_default=True)
 def yolo_to_alto(input, labelmap):
     """ Converts YOLOv5.txt files to ALTO files """
     if not labelmap:
@@ -335,8 +353,8 @@ def yolo_to_alto(input, labelmap):
         xml_name = file[:-4] + ".xml"
         img_file_name = os.path.basename(file[:-4]) + ".jpg"
         zones = []
-        if os.path.exists(os.path.join(os.path.dirname(file), "../..", "images", img_file_name)):
-            img_name = os.path.join(os.path.dirname(file), "../..", "images", img_file_name)
+        if os.path.exists(os.path.join(os.path.dirname(file), "..", "images", img_file_name)):
+            img_name = os.path.join(os.path.dirname(file), "..", "images", img_file_name)
             img_for_xml_name = f"../images/{img_file_name}"
         elif os.path.exists(os.path.join(os.path.dirname(file), "../..", "images", img_file_name)):
             img_name = os.path.join(os.path.dirname(file), "../..", "images", img_file_name)
