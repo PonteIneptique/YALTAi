@@ -1,10 +1,13 @@
 import os
 import logging
 import pytest
+import yaml
 from click.testing import CliRunner
 from ultralytics.utils import LOGGER
 from yaltai.cli.yaltai import yaltai_cli
 from kraken.lib.xml import XMLPage
+from collections import defaultdict
+import tempfile
 
 
 @pytest.fixture(scope='function')
@@ -105,3 +108,35 @@ def test_yaltai_single_alto_to_xml(custom_logger):
 
     assert len([line.baseline for line in page.lines.values()])
     # ToDo: Add a test to check for line being part of regions
+
+
+def test_alto_to_yolo_with_lines(custom_logger):
+    """Test line region detection in ALTO to YOLO conversion"""
+    runner = CliRunner()
+    test_files_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "test_files")
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        result = runner.invoke(
+            yaltai_cli,
+            [
+                "convert", "alto-to-yolo",
+                os.path.join(test_files_dir, "page1.xml"),
+                tempdir,
+                "--line-as-region", "default"
+            ]
+        )
+
+        assert result.exit_code == 0
+        assert os.path.exists(f"{tempdir}/labels/page1.txt")
+
+        with open(f"{tempdir}/config.yml") as f:
+            labelmap = yaml.safe_load(f)["names"]
+
+        # Verify line detection
+        zones = defaultdict(list)
+        with open(f"{tempdir}/labels/page1.txt") as f:
+            for line in f:
+                z, *position = line.split()
+                zones[labelmap[int(z)]].append(position)
+        assert len(zones["default"]) == 19, "There should be 19 lines found"
+        assert zones["default"][0] == ['0.536184', '0.111331', '0.244152', '0.027338'], "First line should be this one"
