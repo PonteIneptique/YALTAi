@@ -19,7 +19,7 @@ DESCRIPTION = "You Actually Look Twice At it, YOLOv5-Kraken adapter for region d
 URL = 'https://github.com/ponteineptique/yaltai'
 AUTHOR = 'Thibault Clérice'
 REQUIRES_PYTHON = '>=3.8.0'
-VERSION = "2.0.4"
+VERSION = "2.0.5"
 
 # What packages are required for this module to be executed?
 
@@ -117,7 +117,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Text Processing :: Linguistic'

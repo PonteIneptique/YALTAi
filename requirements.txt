@@ -1,5 +1,5 @@
-kraken==5.2.9
+kraken~=5.3.0
 mean-average-precision==2021.4.26.0
 tabulate~=0.8.10
-ultralytics==8.0.209
+ultralytics~=8.3.0
 fast_deskew==1.0
