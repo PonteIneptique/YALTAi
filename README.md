@@ -1,9 +1,13 @@
+This code is ARCHIVED. The main objective was to bring object detection to Kraken environment, which has been done through Kraken DFine plugin
+https://github.com/mittagessen/dfine_kraken and Kraken 7 https://github.com/mittagessen/kraken .
+
 # YALTAi
 You Actually Look Twice At it
 
 This provides an adapter for Kraken to use YOLOv8 (1.0.0 update; use previous version to reuse YOLOv5 models) Object Detection routine.
 
 This tool can be used for both segmenting and conversion of models.
+
 
 # Routine
 
